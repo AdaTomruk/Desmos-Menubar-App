@@ -8,10 +8,22 @@
 import SwiftUI
 
 @main
-struct Desmos_MenubarApp: App {
+struct DesmosMenubarApp: App {
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        
+        MenuBarExtra {
+            
+            Menubar()
+                .frame(width: 400, height: 600)
+            
+        } label: {
+
+            Image("MenuBarIcon")
+
         }
+        .menuBarExtraStyle(.window)
+
     }
-}
+
+} 
