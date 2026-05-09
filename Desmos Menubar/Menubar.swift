@@ -38,34 +38,60 @@ private struct WindowConfigurator: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
-        context.coordinator.view = view
-        configureIfPossible(context: context)
+        let view = ConfiguratorView(frame: .zero)
+        view.coordinator = context.coordinator
+        view.minSize = minSize
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        configureIfPossible(context: context)
+        guard let view = nsView as? ConfiguratorView else { return }
+        view.minSize = minSize
+        view.applyWindowConfigurationIfPossible()
     }
 
-    private func configureIfPossible(context: Context) {
-        DispatchQueue.main.async {
-            guard let view = context.coordinator.view, let window = view.window else { return }
+    private final class ConfiguratorView: NSView {
+        weak var coordinator: Coordinator?
+        var minSize: NSSize = .zero
 
-            window.styleMask.insert(.titled)
-            window.styleMask.insert(.resizable)
-            window.isMovableByWindowBackground = true
-            window.minSize = minSize
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            applyWindowConfigurationIfPossible()
+        }
 
-            if !context.coordinator.didSetInitialSize {
-                window.setContentSize(minSize)
-                context.coordinator.didSetInitialSize = true
-            }
+        func applyWindowConfigurationIfPossible() {
+            guard let window else { return }
+            coordinator?.configure(window: window, minSize: minSize)
         }
     }
 
     final class Coordinator {
-        weak var view: NSView?
-        var didSetInitialSize = false
+        private weak var configuredWindow: NSWindow?
+        private var didSetInitialSize = false
+
+        func configure(window: NSWindow, minSize: NSSize) {
+            if configuredWindow !== window {
+                configuredWindow = window
+                didSetInitialSize = false
+            }
+
+            if !window.styleMask.contains(.titled) {
+                window.styleMask.insert(.titled)
+            }
+            if !window.styleMask.contains(.resizable) {
+                window.styleMask.insert(.resizable)
+            }
+            if !window.isMovableByWindowBackground {
+                window.isMovableByWindowBackground = true
+            }
+            if window.contentMinSize != minSize {
+                window.contentMinSize = minSize
+            }
+
+            if !didSetInitialSize {
+                window.setContentSize(minSize)
+                didSetInitialSize = true
+            }
+        }
     }
 }
