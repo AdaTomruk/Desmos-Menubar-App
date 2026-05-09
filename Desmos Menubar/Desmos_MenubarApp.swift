@@ -6,25 +6,28 @@
 //
 
 import SwiftUI
+import AppKit
 
 @main
 struct DesmosMenubarApp: App {
 
     var body: some Scene {
-        
         MenuBarExtra {
-            
             Menubar()
-                .frame(minWidth: 400, idealWidth: 400, maxWidth: .infinity,
-                       minHeight: 600, idealHeight: 600, maxHeight: .infinity)
-            
         } label: {
-
             Image("MenuBarIcon")
-
+        } menu: {
+            SettingsLink()
+            Divider()
+            Button("Quit") {
+                NSApplication.shared.terminate(nil)
+            }
         }
         .menuBarExtraStyle(.window)
 
+        Settings {
+            SettingsView()
+        }
     }
 
 } 
