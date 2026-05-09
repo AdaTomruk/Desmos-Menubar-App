@@ -15,7 +15,8 @@ struct DesmosMenubarApp: App {
         MenuBarExtra {
             
             Menubar()
-                .frame(width: 400, height: 600)
+                .frame(minWidth: 400, idealWidth: 400, maxWidth: .infinity,
+                       minHeight: 600, idealHeight: 600, maxHeight: .infinity)
             
         } label: {
 
