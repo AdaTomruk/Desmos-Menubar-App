@@ -11,15 +11,19 @@ import WebKit
 import AppKit
 
 struct Menubar: View {
+    @AppStorage("windowWidth") private var windowWidth: Double = 400
+    @AppStorage("windowHeight") private var windowHeight: Double = 600
+
     var body: some View {
         if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
             WebView(url: url)
-                .background(WindowConfigurator(minSize: NSSize(width: 400, height: 600)))
+                .frame(width: windowWidth, height: windowHeight)
+                .background(WindowConfigurator(contentSize: NSSize(width: windowWidth, height: windowHeight)))
         } else {
             Text("Erorr: index.html not found")
                 .padding()
                 .frame(width: 300, height: 100)
-                .background(WindowConfigurator(minSize: NSSize(width: 300, height: 100)))
+                .background(WindowConfigurator(contentSize: NSSize(width: 300, height: 100)))
         }
     }
 }
@@ -31,7 +35,7 @@ struct Menubar: View {
 }
 
 private struct WindowConfigurator: NSViewRepresentable {
-    let minSize: NSSize
+    let contentSize: NSSize
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -40,19 +44,19 @@ private struct WindowConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = ConfiguratorView(frame: .zero)
         view.coordinator = context.coordinator
-        view.minSize = minSize
+        view.contentSize = contentSize
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         guard let view = nsView as? ConfiguratorView else { return }
-        view.minSize = minSize
+        view.contentSize = contentSize
         view.applyWindowConfigurationIfPossible()
     }
 
     private final class ConfiguratorView: NSView {
         weak var coordinator: Coordinator?
-        var minSize: NSSize = .zero
+        var contentSize: NSSize = .zero
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
@@ -61,36 +65,38 @@ private struct WindowConfigurator: NSViewRepresentable {
 
         func applyWindowConfigurationIfPossible() {
             guard let window else { return }
-            coordinator?.configure(window: window, minSize: minSize)
+            coordinator?.configure(window: window, contentSize: contentSize)
         }
     }
 
     final class Coordinator {
         private weak var configuredWindow: NSWindow?
-        private var didSetInitialSize = false
+        private var lastAppliedContentSize: NSSize?
 
-        func configure(window: NSWindow, minSize: NSSize) {
+        func configure(window: NSWindow, contentSize: NSSize) {
             if configuredWindow !== window {
                 configuredWindow = window
-                didSetInitialSize = false
+                lastAppliedContentSize = nil
             }
 
             if !window.styleMask.contains(.titled) {
                 window.styleMask.insert(.titled)
             }
-            if !window.styleMask.contains(.resizable) {
-                window.styleMask.insert(.resizable)
+            if window.styleMask.contains(.resizable) {
+                window.styleMask.remove(.resizable)
             }
             if !window.isMovableByWindowBackground {
                 window.isMovableByWindowBackground = true
             }
-            if window.contentMinSize != minSize {
-                window.contentMinSize = minSize
+            if window.contentMinSize != contentSize {
+                window.contentMinSize = contentSize
             }
-
-            if !didSetInitialSize {
-                window.setContentSize(minSize)
-                didSetInitialSize = true
+            if window.contentMaxSize != contentSize {
+                window.contentMaxSize = contentSize
+            }
+            if lastAppliedContentSize != contentSize {
+                window.setContentSize(contentSize)
+                lastAppliedContentSize = contentSize
             }
         }
     }
